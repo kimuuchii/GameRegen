@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Hand Reach — แตะลูกบอล</title>
+<style>
+  :root {
+    --ink: #0f1b2d;
+    --paper: #f5f1e8;
+    --pulse: #e0533d;
+    --pulse-soft: #f4a698;
+    --hit: #2f9e7e;
+    --line: rgba(15, 27, 45, 0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; background: var(--ink); }
+  body {
+    font-family: ui-rounded, "Hiragino Maru Gothic ProN", "Noto Sans Thai", system-ui, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--paper);
+  }
+  #stage {
+    position: relative;
+    width: 100vw; height: 100vh;
+    overflow: hidden;
+  }
+  /* Mirror the camera so movement feels natural (like a mirror) */
+  #cam, #canvas {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+  }
+  #canvas { z-index: 2; }
+  #cam { z-index: 1; filter: saturate(0.6) brightness(0.7); }
+
+  /* darken overlay so game elements pop */
+  #stage::after {
+    content: ""; position: absolute; inset: 0; z-index: 1;
+    background: radial-gradient(ellipse at center, transparent 30%, rgba(15,27,45,0.55) 100%);
+    pointer-events: none;
+  }
+
+  #hud {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 5;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: env(safe-area-inset-top, 16px) 20px 0;
+    pointer-events: none;
+  }
+  .panel {
+    margin-top: 16px;
+    background: rgba(15,27,45,0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(245,241,232,0.15);
+    border-radius: 18px;
+    padding: 14px 20px;
+  }
+  .label { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.6; }
+  .value { font-size: 34px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .value small { font-size: 15px; font-weight: 500; opacity: 0.6; }
+
+  #start {
+    position: absolute; inset: 0; z-index: 20;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 24px; text-align: center; padding: 32px;
+    background: var(--ink);
+  }
+  #start h1 { font-size: 30px; font-weight: 700; max-width: 12ch; line-height: 1.25; }
+  #start p { max-width: 30ch; opacity: 0.7; font-size: 15px; line-height: 1.6; }
+  #startBtn {
+    pointer-events: auto;
+    margin-top: 8px;
+    background: var(--pulse); color: var(--paper);
+    border: none; border-radius: 999px;
+    font-size: 19px; font-weight: 600; font-family: inherit;
+    padding: 18px 44px; cursor: pointer;
+    box-shadow: 0 10px 30px rgba(224,83,61,0.4);
+    transition: transform 0.15s ease;
+  }
+  #startBtn:active { transform: scale(0.96); }
+  .dot-row { display: flex; gap: 8px; margin-bottom: 4px; }
+  .dot-row span { width: 10px; height: 10px; border-radius: 50%; background: var(--pulse); opacity: 0.4; }
+  .dot-row span:nth-child(2){ animation: blink 1.4s infinite 0.2s; }
+  .dot-row span:nth-child(1){ animation: blink 1.4s infinite 0s; }
+  .dot-row span:nth-child(3){ animation: blink 1.4s infinite 0.4s; }
+  @keyframes blink { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+  #status {
+    position: absolute; bottom: env(safe-area-inset-bottom, 20px); left: 50%;
+    transform: translateX(-50%); z-index: 5;
+    font-size: 13px; opacity: 0.5; white-space: nowrap;
+  }
+  .hidden { display: none !important; }
+  @media (prefers-reduced-motion: reduce) {
+    .dot-row span { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <video id="cam" playsinline autoplay muted></video>
+  <canvas id="canvas"></canvas>
+
+  <div id="hud">
+    <div class="panel">
+      <div class="label">คะแนน</div>
+      <div class="value" id="score">0</div>
+    </div>
+    <div class="panel" style="text-align:right">
+      <div class="label">เอื้อมถึง</div>
+      <div class="value" id="reach">0<small> ครั้ง</small></div>
+    </div>
+  </div>
+
+  <div id="status">กำลังเตรียมกล้อง…</div>
+
+  <div id="start">
+    <div class="dot-row"><span></span><span></span><span></span></div>
+    <h1>เอื้อมมือไปแตะลูกบอล</h1>
+    <p>ยืนห่างจาก iPad ประมาณหนึ่งช่วงแขน ให้เห็นมือทั้งสองข้างในกล้อง แล้วเอื้อมมือไปแตะลูกบอลสีส้มที่ลอยอยู่บนจอ</p>
+    <button id="startBtn">เริ่ม</button>
+  </div>
+</div>
+
+<script type="module">
+import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+const video = document.getElementById("cam");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const scoreEl = document.getElementById("score");
+const reachEl = document.getElementById("reach");
+const statusEl = document.getElementById("status");
+const startScreen = document.getElementById("start");
+const startBtn = document.getElementById("startBtn");
+
+let handLandmarker = null;
+let running = false;
+let score = 0;
+let reachCount = 0;
+let target = null;
+let lastVideoTime = -1;
+
+// fingertip landmark indices in MediaPipe Hands (thumb, index, middle, ring, pinky)
+const TIPS = [4, 8, 12, 16, 20];
+
+function resize() {
+  canvas.width = canvas.clientWidth * devicePixelRatio;
+  canvas.height = canvas.clientHeight * devicePixelRatio;
+}
+window.addEventListener("resize", resize);
+
+function spawnTarget() {
+  const margin = 0.18;
+  target = {
+    x: margin + Math.random() * (1 - margin * 2),
+    y: margin + Math.random() * (1 - margin * 2),
+    r: 0.075,            // radius as fraction of min(width,height)
+    born: performance.now(),
+    pop: 0,              // pop animation progress
+    hit: false,
+  };
+}
+
+async function init() {
+  statusEl.textContent = "กำลังโหลดระบบตรวจจับมือ…";
+  const vision = await FilesetResolver.forVisionTasks(
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+  );
+  handLandmarker = await HandLandmarker.createFromOptions(vision, {
+    baseOptions: {
+      modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+      delegate: "GPU",
+    },
+    runningMode: "VIDEO",
+    numHands: 2,
+  });
+
+  statusEl.textContent = "กำลังขอสิทธิ์เข้าถึงกล้อง…";
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+    audio: false,
+  });
+  video.srcObject = stream;
+  await video.play();
+  resize();
+
+  running = true;
+  spawnTarget();
+  statusEl.textContent = "เอื้อมมือไปแตะลูกบอลสีส้ม";
+  requestAnimationFrame(loop);
+}
+
+function loop() {
+  if (!running) return;
+  const W = canvas.width, H = canvas.height;
+  const scale = Math.min(W, H);
+  ctx.clearRect(0, 0, W, H);
+
+  let landmarksList = [];
+  if (video.currentTime !== lastVideoTime) {
+    lastVideoTime = video.currentTime;
+    const res = handLandmarker.detectForVideo(video, performance.now());
+    landmarksList = res.landmarks || [];
+  }
+
+  // draw target
+  if (target) {
+    const tx = target.x * W, ty = target.y * H, tr = target.r * scale;
+    const t = (performance.now() - target.born) / 1000;
+    const breathe = 1 + Math.sin(t * 3) * 0.06;
+
+    if (target.hit) {
+      target.pop += 0.08;
+      const pr = tr * (1 + target.pop * 1.8);
+      ctx.globalAlpha = Math.max(0, 1 - target.pop);
+      ctx.beginPath();
+      ctx.arc(tx, ty, pr, 0, Math.PI * 2);
+      ctx.strokeStyle = "#2f9e7e";
+      ctx.lineWidth = 6 * devicePixelRatio;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      if (target.pop >= 1) spawnTarget();
+    } else {
+      // outer ring
+      ctx.beginPath();
+      ctx.arc(tx, ty, tr * breathe * 1.4, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(244,166,152,0.5)";
+      ctx.lineWidth = 3 * devicePixelRatio;
+      ctx.stroke();
+      // core
+      const grad = ctx.createRadialGradient(tx, ty - tr*0.3, tr*0.2, tx, ty, tr);
+      grad.addColorStop(0, "#f4a698");
+      grad.addColorStop(1, "#e0533d");
+      ctx.beginPath();
+      ctx.arc(tx, ty, tr * breathe, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+    }
+  }
+
+  // draw hands + check collision
+  for (const lm of landmarksList) {
+    // skeleton lines
+    ctx.strokeStyle = "rgba(245,241,232,0.35)";
+    ctx.lineWidth = 2 * devicePixelRatio;
+    const bones = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+    for (const [a,b] of bones) {
+      ctx.beginPath();
+      ctx.moveTo(lm[a].x * W, lm[a].y * H);
+      ctx.lineTo(lm[b].x * W, lm[b].y * H);
+      ctx.stroke();
+    }
+    // fingertips
+    for (const i of TIPS) {
+      const px = lm[i].x * W, py = lm[i].y * H;
+      ctx.beginPath();
+      ctx.arc(px, py, 8 * devicePixelRatio, 0, Math.PI * 2);
+      ctx.fillStyle = i === 8 ? "#f5f1e8" : "rgba(245,241,232,0.7)";
+      ctx.fill();
+
+      // collision: any fingertip touching target
+      if (target && !target.hit) {
+        const dx = px - target.x * W, dy = py - target.y * H;
+        const dist = Math.hypot(dx, dy);
+        if (dist < target.r * scale + 12 * devicePixelRatio) {
+          target.hit = true;
+          score += 10;
+          reachCount += 1;
+          scoreEl.textContent = score;
+          reachEl.innerHTML = reachCount + '<small> ครั้ง</small>';
+          if (navigator.vibrate) navigator.vibrate(40);
+        }
+      }
+    }
+  }
+
+  requestAnimationFrame(loop);
+}
+
+startBtn.addEventListener("click", async () => {
+  startBtn.disabled = true;
+  startBtn.textContent = "กำลังเริ่ม…";
+  try {
+    await init();
+    startScreen.classList.add("hidden");
+  } catch (err) {
+    statusEl.textContent = "เปิดกล้องไม่ได้ — โปรดอนุญาตการเข้าถึงกล้องแล้วลองใหม่";
+    startBtn.disabled = false;
+    startBtn.textContent = "ลองอีกครั้ง";
+    console.error(err);
+  }
+});
+</script>
+</body>
+</html>
