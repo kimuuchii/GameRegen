@@ -4,20 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Hand Reach — เกมฝึกการเคลื่อนไหว</title>
+    <title>เอื้อมใหญ่ — ฝึกเคลื่อนไหวแขน</title>
     <style>
         :root {
-            --ink: #0f1b2d;
-            --ink-2: #16263d;
-            --paper: #f5f1e8;
-            --pulse: #e0533d;
-            --pulse-soft: #f4a698;
-            --green: #2f9e7e;
-            --green-soft: #6fcfae;
-            --red: #d64545;
-            --amber: #e0a93d;
-            --blue: #4a7fd6;
-            --line: rgba(245, 241, 232, 0.15);
+            --ink: #11203a;
+            --ink-2: #1b2e4d;
+            --paper: #eef2f7;
+            --sky: #5aa9e6;
+            --sky-soft: #9fd0f5;
+            --gold: #f2c14e;
+            --green: #5cc99a;
+            --warn: #e8836b;
+            --line: rgba(238, 242, 247, 0.14);
         }
 
         * {
@@ -65,7 +63,7 @@
 
         #cam {
             z-index: 1;
-            filter: saturate(0.6) brightness(0.65);
+            filter: saturate(0.6) brightness(0.62);
         }
 
         #stage::after {
@@ -73,11 +71,10 @@
             position: absolute;
             inset: 0;
             z-index: 1;
-            background: radial-gradient(ellipse at center, transparent 35%, rgba(15, 27, 45, 0.5) 100%);
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(17, 32, 58, 0.5) 100%);
             pointer-events: none;
         }
 
-        /* ===== top HUD during play ===== */
         #hud {
             position: absolute;
             top: 0;
@@ -93,7 +90,7 @@
 
         .panel {
             margin-top: 14px;
-            background: rgba(15, 27, 45, 0.6);
+            background: rgba(17, 32, 58, 0.55);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid var(--line);
@@ -125,16 +122,76 @@
             opacity: 0.6;
         }
 
-        .value.warn {
-            color: var(--amber);
+        #cue {
+            position: absolute;
+            top: calc(env(safe-area-inset-top, 14px) + 84px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5;
+            font-size: 22px;
+            font-weight: 700;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            text-shadow: 0 2px 16px rgba(0, 0, 0, 0.4);
+            white-space: nowrap;
         }
 
-        .value.p1 {
-            color: var(--green-soft);
+        #cue.show {
+            opacity: 0.95;
         }
 
-        .value.p2 {
-            color: var(--pulse-soft);
+        #armLabel {
+            position: absolute;
+            bottom: calc(env(safe-area-inset-bottom, 18px) + 130px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 7;
+            font-size: 28px;
+            font-weight: 800;
+            text-align: center;
+            pointer-events: none;
+            color: var(--gold);
+            text-shadow: 0 3px 20px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        #armLabel.show {
+            opacity: 1;
+        }
+
+        #reachBar {
+            position: absolute;
+            left: 18px;
+            bottom: calc(env(safe-area-inset-bottom, 18px) + 70px);
+            z-index: 6;
+            width: 50px;
+            height: 200px;
+            pointer-events: none;
+        }
+
+        #safetyBanner {
+            position: absolute;
+            bottom: calc(env(safe-area-inset-bottom, 18px) + 76px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 7;
+            background: rgba(232, 131, 107, 0.92);
+            color: #2a0f08;
+            font-weight: 700;
+            font-size: 15px;
+            padding: 12px 22px;
+            border-radius: 14px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        #safetyBanner.show {
+            opacity: 1;
         }
 
         #ctrlBtns {
@@ -150,14 +207,14 @@
         .ctrl {
             pointer-events: auto;
             border: 1px solid var(--line);
-            background: rgba(15, 27, 45, 0.7);
+            background: rgba(17, 32, 58, 0.72);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             color: var(--paper);
             font-family: inherit;
-            font-size: 15px;
-            font-weight: 600;
-            padding: 13px 26px;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 15px 30px;
             border-radius: 999px;
             cursor: pointer;
             transition: transform 0.12s;
@@ -170,14 +227,15 @@
         .ctrl.finish {
             background: var(--green);
             border-color: transparent;
+            color: #06281c;
         }
 
         .ctrl.cancel {
-            background: rgba(214, 69, 69, 0.85);
+            background: rgba(232, 131, 107, 0.9);
             border-color: transparent;
+            color: #2a0f08;
         }
 
-        /* ===== overlay screens (menu / summary) ===== */
         .screen {
             position: absolute;
             inset: 0;
@@ -193,30 +251,106 @@
 
         .screen-inner {
             width: 100%;
-            max-width: 480px;
+            max-width: 460px;
         }
 
         h1 {
-            font-size: 28px;
-            font-weight: 700;
-            line-height: 1.2;
-            margin-bottom: 6px;
+            font-size: 30px;
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 8px;
             text-align: center;
         }
 
         .subtitle {
             text-align: center;
-            opacity: 0.6;
+            opacity: 0.65;
             font-size: 14px;
-            margin-bottom: 26px;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .safety-card {
+            background: var(--ink-2);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            padding: 22px;
+            margin-bottom: 20px;
+        }
+
+        .safety-card h3 {
+            font-size: 16px;
+            margin-bottom: 14px;
+            color: var(--gold);
+        }
+
+        .safety-card ul {
+            list-style: none;
+        }
+
+        .safety-card li {
+            font-size: 14px;
             line-height: 1.5;
+            opacity: 0.85;
+            padding-left: 26px;
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .safety-card li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--green);
+            font-weight: 700;
+        }
+
+        .check-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 6px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .check-row .box {
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            border: 2px solid var(--line);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .check-row.checked .box {
+            background: var(--green);
+            border-color: var(--green);
+        }
+
+        .check-row .box svg {
+            width: 16px;
+            height: 16px;
+            opacity: 0;
+        }
+
+        .check-row.checked .box svg {
+            opacity: 1;
+        }
+
+        .check-row span {
+            font-size: 14px;
+            font-weight: 600;
         }
 
         .group {
             margin-bottom: 22px;
         }
 
-        .group>.glabel {
+        .glabel {
             font-size: 12px;
             letter-spacing: 0.12em;
             text-transform: uppercase;
@@ -227,23 +361,20 @@
         .opts {
             display: flex;
             gap: 8px;
-            flex-wrap: wrap;
         }
 
         .opt {
             flex: 1;
-            min-width: 0;
             border: 1px solid var(--line);
             background: var(--ink-2);
             color: var(--paper);
             font-family: inherit;
             font-size: 14px;
             font-weight: 600;
-            padding: 14px 10px;
+            padding: 14px 8px;
             border-radius: 14px;
             cursor: pointer;
             transition: all 0.15s;
-            white-space: nowrap;
         }
 
         .opt small {
@@ -252,12 +383,11 @@
             font-size: 11px;
             opacity: 0.55;
             margin-top: 3px;
-            white-space: normal;
         }
 
         .opt.active {
-            border-color: var(--pulse);
-            background: rgba(224, 83, 61, 0.15);
+            border-color: var(--sky);
+            background: rgba(90, 169, 230, 0.16);
         }
 
         .opt:active {
@@ -272,61 +402,57 @@
 
         .timeRow input[type=range] {
             flex: 1;
-            accent-color: var(--pulse);
+            accent-color: var(--sky);
             height: 6px;
         }
 
         .timeRow .tval {
             font-size: 22px;
             font-weight: 700;
-            min-width: 90px;
+            min-width: 78px;
             text-align: right;
             font-variant-numeric: tabular-nums;
-        }
-
-        .timeRow .tval small {
-            font-size: 13px;
-            font-weight: 500;
-            opacity: 0.6;
         }
 
         .bigBtn {
             width: 100%;
             margin-top: 8px;
-            background: var(--pulse);
-            color: var(--paper);
+            background: var(--sky);
+            color: #062035;
             border: none;
             border-radius: 999px;
             font-size: 19px;
-            font-weight: 700;
+            font-weight: 800;
             font-family: inherit;
             padding: 18px;
             cursor: pointer;
-            box-shadow: 0 10px 30px rgba(224, 83, 61, 0.4);
-            transition: transform 0.15s;
+            box-shadow: 0 10px 30px rgba(90, 169, 230, 0.35);
+            transition: transform 0.15s, opacity 0.2s;
         }
 
         .bigBtn:active {
             transform: scale(0.97);
         }
 
+        .bigBtn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
         .bigBtn.secondary {
             background: var(--ink-2);
+            color: var(--paper);
             border: 1px solid var(--line);
             box-shadow: none;
             margin-top: 12px;
         }
 
-        /* ===== summary ===== */
         .stat-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
             margin: 8px 0 24px;
-        }
-
-        .stat-grid.solo {
-            grid-template-columns: 1fr 1fr;
         }
 
         .stat {
@@ -339,9 +465,13 @@
 
         .stat .num {
             font-size: 38px;
-            font-weight: 700;
+            font-weight: 800;
             line-height: 1;
             font-variant-numeric: tabular-nums;
+        }
+
+        .stat .num.hl {
+            color: var(--gold);
         }
 
         .stat .cap {
@@ -350,62 +480,18 @@
             margin-top: 8px;
         }
 
-        .winner {
-            text-align: center;
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 18px;
-            padding: 14px;
-            border-radius: 14px;
-            background: rgba(47, 158, 126, 0.15);
-            border: 1px solid rgba(47, 158, 126, 0.4);
-        }
-
-        /* split divider for 2P */
-        #divider {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 50%;
-            width: 2px;
-            background: rgba(245, 241, 232, 0.25);
-            z-index: 3;
-            transform: translateX(-1px);
-            pointer-events: none;
-        }
-
-        #pLabels {
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            z-index: 4;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 26px;
-            pointer-events: none;
-            transform: translateY(-50%);
-        }
-
-        #pLabels span {
-            font-size: 13px;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            opacity: 0.4;
-        }
-
         #status {
             position: absolute;
-            bottom: calc(env(safe-area-inset-bottom, 18px) + 60px);
+            bottom: calc(env(safe-area-inset-bottom, 18px) + 64px);
             left: 50%;
             transform: translateX(-50%);
             z-index: 5;
             font-size: 13px;
-            opacity: 0.5;
-            white-space: nowrap;
+            opacity: 0.55;
+            text-align: center;
+            max-width: 80%;
         }
 
-        /* countdown */
         #countdown {
             position: absolute;
             inset: 0;
@@ -413,9 +499,8 @@
             display: none;
             align-items: center;
             justify-content: center;
-            font-size: 120px;
-            font-weight: 700;
-            color: var(--paper);
+            font-size: 110px;
+            font-weight: 800;
             text-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
         }
 
@@ -424,8 +509,11 @@
         }
 
         @media (prefers-reduced-motion: reduce) {
-            * {
-                animation: none !important;
+
+            #cue,
+            #safetyBanner,
+            #armLabel {
+                transition: none;
             }
         }
     </style>
@@ -435,83 +523,93 @@
     <div id="stage">
         <video id="cam" playsinline autoplay muted></video>
         <canvas id="canvas"></canvas>
-        <div id="divider" class="hidden"></div>
-        <div id="pLabels" class="hidden"><span>ผู้เล่น 1</span><span>ผู้เล่น 2</span></div>
 
-        <!-- HUD -->
         <div id="hud" class="hidden">
-            <div class="panel" id="hudLeft">
-                <div class="label" id="hudLeftLabel">คะแนน</div>
-                <div class="value" id="hudLeftVal">0</div>
+            <div class="panel">
+                <div class="label">เป้าที่ทำได้</div>
+                <div class="value" id="hudDone">0</div>
             </div>
             <div class="panel center">
                 <div class="label">เวลา</div>
                 <div class="value" id="hudTime">0:00</div>
             </div>
-            <div class="panel" id="hudRight" style="text-align:right">
-                <div class="label" id="hudRightLabel">เอื้อมถึง</div>
-                <div class="value" id="hudRightVal">0</div>
+            <div class="panel" style="text-align:right">
+                <div class="label">เอื้อมไกลสุด</div>
+                <div class="value" id="hudReach">0<small>%</small></div>
             </div>
         </div>
 
+        <div id="cue">เอื้อมไปค้างที่วงกลม</div>
+        <div id="armLabel"></div>
+        <div id="safetyBanner">ระวัง — ยืนตรง อย่าเอนตัวมาก</div>
+        <canvas id="reachBar" width="50" height="200"></canvas>
+
         <div id="ctrlBtns" class="hidden">
             <button class="ctrl finish" id="btnFinish">เสร็จ</button>
-            <button class="ctrl cancel" id="btnCancel">ยกเลิก</button>
+            <button class="ctrl cancel" id="btnCancel">หยุด</button>
         </div>
 
         <div id="status" class="hidden"></div>
         <div id="countdown"></div>
 
-        <!-- MENU -->
+        <!-- MENU with safety gate -->
         <div id="menu" class="screen">
             <div class="screen-inner">
-                <h1>เกมฝึกการเคลื่อนไหว</h1>
-                <p class="subtitle">เอื้อมมือไปแตะเป้าหมายบนจอ ผ่านกล้อง iPad</p>
+                <h1>เอื้อมใหญ่</h1>
+                <p class="subtitle">ฝึกเคลื่อนไหวแขนแบบใหญ่ ช้า เต็มช่วง<br>เอื้อมไปค้างที่เป้า แล้วเป้าจะย้ายที่</p>
 
-                <div class="group">
-                    <div class="glabel">โหมดเกม</div>
-                    <div class="opts" id="modeOpts">
-                        <button class="opt active"
-                            data-mode="reach">แตะลูกบอล<small>เอื้อมแตะเป้าที่ลอยมา</small></button>
-                        <button class="opt" data-mode="color2">2 สี<small>เขียวได้ แดงเสีย</small></button>
-                        <button class="opt" data-mode="pick">เลือกสี<small>แตะตามสีที่สั่ง</small></button>
+                <div class="safety-card">
+                    <h3>⚠️ ก่อนเริ่ม — ความปลอดภัย</h3>
+                    <ul>
+                        <li>มีที่จับ (เก้าอี้/ราว) หรือคนดูแลอยู่ข้างๆ</li>
+                        <li>ยืนกับที่ ไม่ต้องก้าวเท้าหรือเอนตัวมาก</li>
+                        <li>เอื้อมเท่าที่สบาย ไม่ฝืนจนเสียหลัก</li>
+                        <li>รู้สึกเวียนหัวหรือเมื่อยให้กดหยุดทันที</li>
+                    </ul>
+                    <div class="check-row" id="safetyCheck">
+                        <div class="box"><svg viewBox="0 0 24 24" fill="none">
+                                <path d="M5 12l4 4L19 7" stroke="#06281c" stroke-width="3" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg></div>
+                        <span>เข้าใจและพร้อมแล้ว มีคนดูแล/ที่จับ</span>
                     </div>
                 </div>
 
                 <div class="group">
-                    <div class="glabel">ระดับความยาก</div>
-                    <div class="opts" id="diffOpts">
-                        <button class="opt active" data-diff="easy">ง่าย<small>เป้าใหญ่ ใกล้</small></button>
-                        <button class="opt" data-diff="medium">ปานกลาง<small>เป้าเล็กลง</small></button>
-                        <button class="opt" data-diff="hard">ยาก<small>ไกล + 2 มือ</small></button>
+                    <div class="glabel">ท่าทาง</div>
+                    <div class="opts" id="postureOpts">
+                        <button class="opt active" data-posture="stand">ยืนทำ<small>มีที่จับข้างๆ</small></button>
+                        <button class="opt" data-posture="sit">นั่งทำ<small>ปลอดภัยกว่า</small></button>
                     </div>
                 </div>
 
                 <div class="group">
-                    <div class="glabel">จำนวนผู้เล่น</div>
-                    <div class="opts" id="playerOpts">
-                        <button class="opt active" data-players="1">1 คน<small>ฝึกเดี่ยว</small></button>
-                        <button class="opt" data-players="2">2 คนแข่งกัน<small>แบ่งซ้าย-ขวา</small></button>
+                    <div class="glabel">ระดับการเอื้อม</div>
+                    <div class="opts" id="rangeOpts">
+                        <button class="opt active" data-range="near">ใกล้<small>เอื้อมไม่สุด</small></button>
+                        <button class="opt" data-range="mid">ปานกลาง<small>เอื้อมพอดี</small></button>
+                        <button class="opt" data-range="far">ไกล<small>เอื้อมเต็มช่วง</small></button>
                     </div>
                 </div>
 
                 <div class="group">
-                    <div class="glabel">ตั้งเวลา</div>
+                    <div class="glabel">เวลาค้างที่เป้า</div>
+                    <div class="opts" id="holdOpts">
+                        <button class="opt" data-hold="800">เร็ว<small>0.8 วิ</small></button>
+                        <button class="opt active" data-hold="1500">ปกติ<small>1.5 วิ</small></button>
+                        <button class="opt" data-hold="2500">ช้า<small>2.5 วิ</small></button>
+                    </div>
+                </div>
+
+                <div class="group">
+                    <div class="glabel">เวลาเล่น (0 = ไม่จำกัด)</div>
                     <div class="timeRow">
-                        <input type="range" id="timeRange" min="15" max="180" step="15" value="60">
-                        <div class="tval"><span id="timeDisplay">1:00</span></div>
+                        <input type="range" id="timeRange" min="0" max="300" step="30" value="120">
+                        <div class="tval"><span id="timeDisplay">2:00</span></div>
                     </div>
                 </div>
 
-                <div class="group">
-                    <div class="glabel">เวลาต่อลูก</div>
-                    <div class="timeRow">
-                        <input type="range" id="ballRange" min="2" max="11" step="1" value="11">
-                        <div class="tval"><span id="ballDisplay">ไม่จำกัด</span></div>
-                    </div>
-                </div>
-
-                <button class="bigBtn" id="btnStart">เริ่มเล่น</button>
+                <button class="bigBtn" id="btnStart" disabled>เริ่มเล่น</button>
             </div>
         </div>
 
@@ -520,8 +618,9 @@
             <div class="screen-inner">
                 <h1>สรุปผล</h1>
                 <p class="subtitle" id="sumSubtitle"></p>
-                <div id="sumWinner" class="winner hidden"></div>
                 <div class="stat-grid" id="sumStats"></div>
+                <p class="subtitle" style="font-size:12px; opacity:0.5">ตัวเลขเหล่านี้ไว้ดูพัฒนาการเบื้องต้น
+                    ไม่ใช่การประเมินทางการแพทย์</p>
                 <button class="bigBtn" id="btnAgain">เล่นอีกครั้ง</button>
                 <button class="bigBtn secondary" id="btnMenu">กลับเมนู</button>
             </div>
@@ -529,97 +628,163 @@
     </div>
 
     <script type="module">
-        import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+        import { PoseLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
 
-        // ---------- elements ----------
         const $ = id => document.getElementById(id);
         const video = $("cam"), canvas = $("canvas"), ctx = canvas.getContext("2d");
         const menu = $("menu"), summary = $("summary"), hud = $("hud"), ctrlBtns = $("ctrlBtns");
-        const statusEl = $("status"), countdownEl = $("countdown");
-        const divider = $("divider"), pLabels = $("pLabels");
+        const statusEl = $("status"), countdownEl = $("countdown"), cueEl = $("cue"), safetyBanner = $("safetyBanner");
+        const armLabel = $("armLabel");
+        const reachCanvas = $("reachBar"), rctx = reachCanvas.getContext("2d");
 
-        // ---------- config state ----------
-        // ballTimeTouched: true เมื่อผู้ใช้ปรับ "เวลาต่อลูก" เอง (override ค่า life ตามความยาก)
-        const config = { mode: "reach", diff: "easy", players: 1, time: 60, ballTimeTouched: false };
+        const config = { posture: "stand", range: "near", hold: 1500, time: 120, safetyOk: false };
 
-        const DIFF = {
-            easy: { r: 0.085, margin: 0.16, life: 0, twoHandChance: 0 },
-            medium: { r: 0.06, margin: 0.14, life: 4000, twoHandChance: 0 },
-            hard: { r: 0.05, margin: 0.10, life: 3000, twoHandChance: 0.3 },
+        const RANGE = { near: 0.9, mid: 1.2, far: 1.5 };
+
+        const IDX = {
+            L: { sh: 11, el: 13, wr: 15, hip: 23 },
+            R: { sh: 12, el: 14, wr: 16, hip: 24 },
         };
+        const POSE_BONES = [[11, 13], [13, 15], [12, 14], [14, 16], [11, 12], [11, 23], [12, 24], [23, 24]];
 
-        // ช่วง "ปลอดการชน" หลัง spawn (มิลลิวินาที) กันคะแนนเฟ้อจากนิ้วที่ค้างอยู่ที่เดิม
-        const SPAWN_SAFE_MS = 300;
+        const TARGET_R_FRAC = 0.095;
 
-        // ---------- menu interactions ----------
-        function wireOpts(containerId, key, cast = v => v, onChange = null) {
+        const EMA_ALPHA = 0.4;
+        let smoothedLm = null;
+        function smoothLandmarks(raw) {
+            if (!smoothedLm || smoothedLm.length !== raw.length) {
+                smoothedLm = raw.map(p => ({ x: p.x, y: p.y, z: p.z || 0 }));
+                return smoothedLm;
+            }
+            for (let i = 0; i < raw.length; i++) {
+                smoothedLm[i].x += EMA_ALPHA * (raw[i].x - smoothedLm[i].x);
+                smoothedLm[i].y += EMA_ALPHA * (raw[i].y - smoothedLm[i].y);
+            }
+            return smoothedLm;
+        }
+
+        function drawUnmirroredText(text, rx, ry, font, fillStyle, align = "center", baseline = "middle") {
+            ctx.save();
+            ctx.translate(rx, ry);
+            ctx.scale(-1, 1);
+            ctx.font = font;
+            ctx.fillStyle = fillStyle;
+            ctx.textAlign = align === "center" ? "center" : (align === "left" ? "right" : "left");
+            ctx.textBaseline = baseline;
+            ctx.fillText(text, 0, 0);
+            ctx.restore();
+        }
+
+        function drawAlignmentGuide(W, H, lm) {
+            ctx.save();
+            
+            let shCx = 0.5;
+            let hasPose = lm && lm.length > 24;
+            if (hasPose) {
+                shCx = (lm[11].x + lm[12].x) / 2;
+            }
+
+            const cx = W / 2;
+            const isAligned = !hasPose || (shCx > 0.43 && shCx < 0.57);
+            const color = hasPose 
+                ? (isAligned ? "rgba(92, 201, 154, 0.45)" : "rgba(242, 193, 78, 0.45)") 
+                : "rgba(238, 242, 247, 0.2)";
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2 * devicePixelRatio;
+            ctx.setLineDash([6, 8]);
+
+            // Vertical axis
+            ctx.beginPath();
+            ctx.moveTo(cx, 0);
+            ctx.lineTo(cx, H);
+            ctx.stroke();
+
+            // Head circle
+            const headCy = H * 0.22;
+            const headR = H * 0.07;
+            ctx.beginPath();
+            ctx.arc(cx, headCy, headR, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Shoulders & torso outline
+            const shY = H * 0.36;
+            const shHalfW = Math.min(W * 0.18, H * 0.12);
+            const hipY = H * 0.72;
+            const hipHalfW = shHalfW * 0.8;
+
+            ctx.beginPath();
+            ctx.moveTo(cx, headCy + headR);
+            ctx.lineTo(cx, shY);
+            ctx.moveTo(cx, shY);
+            ctx.lineTo(cx - shHalfW, shY);
+            ctx.lineTo(cx - hipHalfW, hipY);
+            ctx.moveTo(cx, shY);
+            ctx.lineTo(cx + shHalfW, shY);
+            ctx.lineTo(cx + hipHalfW, hipY);
+            ctx.moveTo(cx - hipHalfW, hipY);
+            ctx.lineTo(cx + hipHalfW, hipY);
+            ctx.stroke();
+
+            ctx.setLineDash([]);
+
+            // Alignment guidance text
+            if (hasPose && !isAligned) {
+                ctx.save();
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.font = `bold ${Math.round(15 * devicePixelRatio)}px ui-rounded, sans-serif`;
+                ctx.fillStyle = "#f2c14e";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("ขยับตัวให้อยู่ตรงกลางกรอบ ↔️", canvas.width / 2, H * 0.45);
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        // ---------- menu ----------
+        function wireOpts(containerId, key, cast = v => v) {
             $(containerId).addEventListener("click", e => {
                 const btn = e.target.closest(".opt"); if (!btn) return;
                 [...$(containerId).children].forEach(c => c.classList.remove("active"));
-                btn.classList.add("active");
-                config[key] = cast(btn.dataset[key]);
-                if (onChange) onChange();
+                btn.classList.add("active"); config[key] = cast(btn.dataset[key]);
             });
         }
-        wireOpts("modeOpts", "mode");
-        // เมื่อเปลี่ยนความยาก ให้ "เวลาต่อลูก" ตามค่า default ของความยากนั้น (ถ้าผู้ใช้ยังไม่ override)
-        wireOpts("diffOpts", "diff", v => v, () => syncBallDefault());
-        wireOpts("playerOpts", "players", v => parseInt(v));
+        wireOpts("postureOpts", "posture");
+        wireOpts("rangeOpts", "range");
+        wireOpts("holdOpts", "hold", v => parseInt(v));
+
+        let isReady = false;
+
+        $("safetyCheck").addEventListener("click", () => {
+            const el = $("safetyCheck"); el.classList.toggle("checked");
+            config.safetyOk = el.classList.contains("checked");
+            $("btnStart").disabled = !config.safetyOk || !isReady;
+        });
 
         const timeRange = $("timeRange"), timeDisplay = $("timeDisplay");
-        function fmtTime(s) { const m = Math.floor(s / 60), ss = s % 60; return m + ":" + String(ss).padStart(2, "0"); }
-        timeRange.addEventListener("input", () => { config.time = parseInt(timeRange.value); timeDisplay.textContent = fmtTime(config.time); });
-
-        // ---------- เวลาต่อลูก (per-ball countdown) ----------
-        // slider 2..11 : ค่า 2-10 = วินาที, ค่า 11 = "ไม่จำกัด"
-        const ballRange = $("ballRange"), ballDisplay = $("ballDisplay");
-        function fmtBall(v) { return v > 10 ? "ไม่จำกัด" : v + '<small> วิ</small>'; }
-        // sync ค่าแสดงผลให้ตรงกับ default ของความยาก (ใช้เมื่อผู้ใช้ยังไม่แตะ slider เอง)
-        function syncBallDefault() {
-            if (config.ballTimeTouched) return;
-            const life = DIFF[config.diff].life;
-            const v = life === 0 ? 11 : Math.round(life / 1000);
-            ballRange.value = v; ballDisplay.innerHTML = fmtBall(v);
+        function fmtTime(s) {
+            if (s <= 0) return "∞";
+            const m = Math.floor(s / 60), ss = s % 60;
+            return m + ":" + String(ss).padStart(2, "0");
         }
-        ballRange.addEventListener("input", () => {
-            config.ballTimeTouched = true; // ผู้ใช้ override แล้ว
-            ballDisplay.innerHTML = fmtBall(parseInt(ballRange.value));
+        timeRange.addEventListener("input", () => {
+            config.time = parseInt(timeRange.value);
+            timeDisplay.textContent = config.time === 0 ? "ไม่จำกัด" : fmtTime(config.time);
         });
-        syncBallDefault(); // ตั้งค่าเริ่มต้นตามความยาก default (easy = ไม่จำกัด)
 
-        // คืนค่า life (ms) ที่ใช้จริง: ถ้าผู้ใช้ override ใช้ค่าจาก slider, ไม่งั้นใช้ค่าตามความยาก
-        function effectiveLife() {
-            if (config.ballTimeTouched) {
-                const v = parseInt(ballRange.value);
-                return v > 10 ? 0 : v * 1000;
-            }
-            return DIFF[config.diff].life;
-        }
+        // ---------- mediapipe pose ----------
+        let poseLandmarker = null;
 
-        // ---------- mediapipe ----------
-        let handLandmarker = null;
-        let visionFileset = null;     // cache wasm fileset (โหลดครั้งเดียว)
-        let currentNumHands = 0;      // numHands ที่ landmarker ปัจจุบันใช้อยู่
-        const TIPS = [4, 8, 12, 16, 20];
-        const BONES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12], [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [17, 18], [18, 19], [19, 20], [0, 17]];
-        const PALETTE = { green: "#2f9e7e", red: "#d64545", blue: "#4a7fd6", amber: "#e0a93d" };
-
-        // สร้าง landmarker ตาม numHands ที่โหมดต้องการ (1 คน = 2 มือ, 2 คน = 4 มือ)
-        // ถ้าค่าเดิมซ้ำก็ใช้ของเดิม (cache) ไม่สร้างใหม่
-        async function ensureModel(numHands) {
-            if (handLandmarker && currentNumHands === numHands) return;
-            statusEl.classList.remove("hidden");
-            statusEl.textContent = "กำลังโหลดระบบตรวจจับมือ…";
-            if (!visionFileset) {
-                visionFileset = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
-            }
-            // ปิด landmarker เดิมก่อนสร้างใหม่ เพื่อเลี่ยง memory leak เมื่อเปลี่ยน numHands
-            if (handLandmarker) { try { handLandmarker.close(); } catch (e) { } handLandmarker = null; }
-            handLandmarker = await HandLandmarker.createFromOptions(visionFileset, {
-                baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task", delegate: "GPU" },
-                runningMode: "VIDEO", numHands,
+        async function ensureModel() {
+            if (poseLandmarker) return;
+            statusEl.classList.remove("hidden"); statusEl.textContent = "กำลังโหลดระบบตรวจจับร่างกาย…";
+            const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+            poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+                baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task", delegate: "GPU" },
+                runningMode: "VIDEO", numPoses: 1,
             });
-            currentNumHands = numHands;
         }
         async function ensureCamera() {
             if (video.srcObject) return;
@@ -631,442 +796,410 @@
         window.addEventListener("resize", resize);
 
         // ---------- game state ----------
-        let game = null;
-        let lastVideoTime = -1;
-
-        function makeTarget(side) {
-            // side: null=full screen, 'L'=left half, 'R'=right half
-            const d = DIFF[config.diff];
-            let xMin = d.margin, xMax = 1 - d.margin;
-            if (side === "L") { xMin = d.margin; xMax = 0.5 - 0.04; }
-            if (side === "R") { xMin = 0.5 + 0.04; xMax = 1 - d.margin; }
-
-            let color = "green", scoring = "good";
-            if (config.mode === "color2") {
-                color = Math.random() < 0.5 ? "green" : "red";
-                scoring = color === "green" ? "good" : "bad";
-            }
-            const twoHand = config.mode === "reach" && Math.random() < d.twoHandChance;
-
-            return {
-                x: xMin + Math.random() * (xMax - xMin),
-                y: d.margin + Math.random() * (1 - d.margin * 2),
-                r: d.r, color, scoring, twoHand,
-                side, born: performance.now(), hit: false, pop: 0, touchedBy: new Set(),
-                // life: เวลาต่อลูก (ms) ที่ใช้จริง, 0 = ไม่จำกัด
-                life: effectiveLife(),
-                // armed: จะนับการแตะได้ก็ต่อเมื่อบริเวณลูกปลอดนิ้วมาก่อน (กันนับซ้ำจากนิ้วที่ค้าง)
-                armed: false,
-            };
-        }
-
-        // "pick" mode: spawn 4 targets, one matching commanded color
-        function makePickSet(side) {
-            const d = DIFF[config.diff];
-            const colors = ["green", "red", "blue", "amber"];
-            const target = colors[Math.floor(Math.random() * 4)];
-            let xMin = d.margin, xMax = 1 - d.margin;
-            if (side === "L") { xMax = 0.5 - 0.04; }
-            if (side === "R") { xMin = 0.5 + 0.04; }
-            // 4 positions in a loose grid within the region
-            const positions = [];
-            const shuffled = [...colors].sort(() => Math.random() - 0.5);
-            for (let i = 0; i < 4; i++) {
-                positions.push({
-                    x: xMin + (0.2 + 0.6 * ((i % 2))) * (xMax - xMin),
-                    y: d.margin + (0.25 + 0.5 * (i < 2 ? 0 : 1)) * (1 - d.margin * 2),
-                    color: shuffled[i],
-                });
-            }
-            return {
-                command: target, balls: positions.map(p => ({ ...p, r: d.r })), side, resolved: false,
-                // born/life/armed: ใช้กลไกเดียวกับโหมดลูกบอล (ปลอดการชน + วงแหวนเวลา)
-                born: performance.now(), life: effectiveLife(), armed: false,
-            };
-        }
+        let game = null, lastVideoTime = -1, prevFrameTime = 0;
 
         function startGame() {
             resize();
-            const players = config.players;
             game = {
-                running: true, startTime: performance.now(), duration: config.time * 1000,
-                players,
-                // per-player stats
-                p: [
-                    { score: 0, reach: 0, miss: 0 },
-                    { score: 0, reach: 0, miss: 0 },
-                ],
-                targets: [], pickSets: [],
+                running: true,
+                startTime: performance.now(),
+                duration: config.time > 0 ? config.time * 1000 : Infinity,
+                done: 0,
+                maxReachPct: 0,
+                totalReachPct: 0,
+                reachSamples: 0,
+                holdAccum: 0,
+                target: null,
+                activeArm: "R",
+                _lastPose: null,
+                leanFrames: 0,
+                leanWarnCount: 0,
+                cueOn: true,
+                currentReachPct: 0,
+                armHistory: { L: 0, R: 0 },
+                rhythmPhase: 0,
             };
-
-            // spawn initial
-            if (config.mode === "pick") {
-                if (players === 2) { game.pickSets = [makePickSet("L"), makePickSet("R")]; }
-                else { game.pickSets = [makePickSet(null)]; }
-            } else {
-                if (players === 2) { game.targets = [makeTarget("L"), makeTarget("R")]; }
-                else { game.targets = [makeTarget(null)]; }
-            }
-
-            // UI
-            menu.classList.add("hidden"); summary.classList.add("hidden");
-            hud.classList.remove("hidden"); ctrlBtns.classList.remove("hidden");
-            const is2P = players === 2;
-            divider.classList.toggle("hidden", !is2P);
-            pLabels.classList.toggle("hidden", !is2P);
-            setupHudLabels();
+            newTarget();
+            menu.classList.add("hidden");
+            summary.classList.add("hidden");
+            hud.classList.remove("hidden");
+            ctrlBtns.classList.remove("hidden");
             statusEl.classList.add("hidden");
-
+            cueEl.classList.add("show");
+            armLabel.classList.add("show");
+            prevFrameTime = performance.now();
             requestAnimationFrame(loop);
         }
 
-        function setupHudLabels() {
-            if (game.players === 2) {
-                $("hudLeftLabel").textContent = "ผู้เล่น 1";
-                $("hudRightLabel").textContent = "ผู้เล่น 2";
-                $("hudLeftVal").className = "value p1";
-                $("hudRightVal").className = "value p2";
+        function newTarget() {
+            game.activeArm = game.activeArm === "R" ? "L" : "R";
+            // 35% chance to do a cross-body reach
+            const isCrossBody = Math.random() < 0.35;
+            game.target = { holdProgress: 0, arm: game.activeArm, bodyRelative: true, isCrossBody };
+            game.holdAccum = 0;
+            game.lastTargetMoveAt = performance.now();
+
+            let armName = "";
+            if (game.activeArm === "R") {
+                armName = isCrossBody ? "ใช้แขนขวา ➜ เอื้อมไขว้ไปซ้าย ↖️" : "ใช้แขนขวา ➜ เอื้อมไปทางขวา ➜";
             } else {
-                $("hudLeftLabel").textContent = "คะแนน";
-                $("hudRightLabel").textContent = "เอื้อมถึง";
-                $("hudLeftVal").className = "value";
-                $("hudRightVal").className = "value";
+                armName = isCrossBody ? "ใช้แขนซ้าย ➜ เอื้อมไขว้ไปขวา ↗️" : "← ใช้แขนซ้าย ➜ เอื้อมไปทางซ้าย";
             }
-            updateHud();
+            armLabel.textContent = armName;
+
+            const cues = [
+                "เอื้อมช้าๆ ไปค้างที่วงกลม",
+                "ยืดแขนไปให้ถึงเป้า",
+                "เอื้อมออกไป ค้างไว้ให้วงเขียวเต็ม",
+                "ค่อยๆ เอื้อมออก ไม่ต้องรีบ",
+            ];
+            cueEl.textContent = cues[game.done % cues.length];
         }
 
-        function updateHud() {
-            if (game.players === 2) {
-                $("hudLeftVal").textContent = game.p[0].score;
-                $("hudRightVal").textContent = game.p[1].score;
+        function resolveTargetPos(lm, W, H) {
+            const t = game.target;
+            if (t._locked) return { x: t._locked.x * W, y: t._locked.y * H };
+
+            const arm = IDX[t.arm];
+            const sh = lm[arm.sh];
+            const hip = lm[arm.hip];
+            if (!sh || !hip) return null;
+
+            const bodyScale = dist(sh.x, sh.y, hip.x, hip.y) || 0.25;
+            const rangeMul = RANGE[config.range];
+
+            // Calculate base angle. For cross-body, we swap the direction.
+            let baseAngle;
+            if (t.arm === "R") {
+                baseAngle = t.isCrossBody ? -0.5 : Math.PI + 0.5;
             } else {
-                $("hudLeftVal").textContent = game.p[0].score;
-                $("hudRightVal").innerHTML = game.p[0].reach + '<small> ครั้ง</small>';
+                baseAngle = t.isCrossBody ? Math.PI + 0.5 : -0.5;
             }
+            const angle = baseAngle + (Math.random() - 0.5) * 0.8;
+            const vertBias = -0.3 - Math.random() * 0.4;
+
+            const reachDist = bodyScale * rangeMul;
+            const tx = Math.max(0.08, Math.min(0.92, sh.x + Math.cos(angle) * reachDist));
+            const ty = Math.max(0.08, Math.min(0.85, sh.y + vertBias * reachDist));
+
+            t._locked = { x: tx, y: ty };
+            return { x: tx * W, y: ty * H };
         }
 
-        // ---------- countdown then start ----------
         async function beginWithCountdown() {
-            try {
-                // จับมือเท่าที่โหมดต้องการ: 2 คน = 4 มือ, 1 คน = 2 มือ (ลดภาระเครื่อง)
-                await ensureModel(config.players === 2 ? 4 : 2);
-                await ensureCamera();
-            } catch (err) {
-                statusEl.classList.remove("hidden");
-                statusEl.textContent = "เปิดกล้องไม่ได้ — โปรดอนุญาตการเข้าถึงกล้องแล้วลองใหม่";
-                console.error(err); return;
-            }
+            try { await ensureModel(); await ensureCamera(); }
+            catch (err) { statusEl.classList.remove("hidden"); statusEl.textContent = "เปิดกล้องไม่ได้ — โปรดอนุญาตการเข้าถึงกล้องแล้วลองใหม่"; console.error(err); return; }
             countdownEl.style.display = "flex";
-            for (const n of ["3", "2", "1", "เริ่ม!"]) {
-                countdownEl.textContent = n;
-                await new Promise(r => setTimeout(r, 700));
-            }
-            countdownEl.style.display = "none";
-            startGame();
+            for (const n of ["3", "2", "1", "เริ่ม!"]) { countdownEl.textContent = n; await new Promise(r => setTimeout(r, 650)); }
+            countdownEl.style.display = "none"; startGame();
         }
+
+        function dist(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by); }
 
         // ---------- main loop ----------
         function loop() {
             if (!game || !game.running) return;
             const W = canvas.width, H = canvas.height, scale = Math.min(W, H);
             ctx.clearRect(0, 0, W, H);
+            const now = performance.now();
+            const dt = Math.min(now - prevFrameTime, 100);
+            prevFrameTime = now;
 
-            // time
-            const elapsed = performance.now() - game.startTime;
-            const remain = Math.max(0, game.duration - elapsed);
-            const remainSec = Math.ceil(remain / 1000);
-            const timeEl = $("hudTime");
-            timeEl.textContent = fmtTime(remainSec);
-            timeEl.className = remainSec <= 10 ? "value warn" : "value";
-            if (remain <= 0) { endGame(); return; }
+            game.rhythmPhase += dt * 0.001;
 
-            // ตรวจจับมือ "เฉพาะเมื่อเฟรมกล้องอัปเดตจริง" เท่านั้น (newFrame)
-            // ถ้าเฟรมกล้องยังไม่เปลี่ยน เราจะวาดต่อด้วยโครงมือเดิมได้ แต่จะไม่ประมวลผลการชน
-            // ด้วยตำแหน่งเก่า เพื่อกันอาการหน่วงและกันคะแนนเฟ้อจากข้อมูลค้าง
-            let newFrame = false;
-            if (handLandmarker && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
-                lastVideoTime = video.currentTime;
-                const res = handLandmarker.detectForVideo(video, performance.now());
-                game._lastHands = res.landmarks || [];
-                newFrame = true;
+            const elapsed = now - game.startTime;
+            if (game.duration !== Infinity) {
+                const remain = Math.max(0, game.duration - elapsed);
+                const remainSec = Math.ceil(remain / 1000);
+                $("hudTime").textContent = fmtTime(remainSec);
+                if (remain <= 0) { endGame(); return; }
+            } else {
+                const elSec = Math.floor(elapsed / 1000);
+                $("hudTime").textContent = fmtTime(elSec);
             }
-            const hands = game._lastHands || []; // โครงมือล่าสุด (ใช้สำหรับวาดให้ลื่นต่อเนื่อง)
 
-            // collect fingertip points (in pixel space) — ใช้ตรวจการชนเฉพาะเฟรมที่ตรวจจับใหม่
-            const tips = [];
-            if (newFrame) {
-                for (const lm of hands) {
-                    for (const i of TIPS) tips.push({ x: lm[i].x * W, y: lm[i].y * H, lm, idx: i });
+            let pose = null;
+            if (video.currentTime !== lastVideoTime) {
+                lastVideoTime = video.currentTime;
+                const res = poseLandmarker.detectForVideo(video, now);
+                const rawPose = (res.landmarks && res.landmarks[0]) || null;
+                if (rawPose) {
+                    pose = smoothLandmarks(rawPose);
+                    game._lastPose = pose;
                 }
             }
+            const lm = pose || game._lastPose;
 
-            // ----- render + logic by mode -----
-            // newFrame บอกว่าเฟรมนี้มีข้อมูลมือสด ๆ ให้ประมวลผลการชน/arm หรือไม่
-            if (config.mode === "pick") updatePickMode(W, H, scale, tips, newFrame);
-            else updateBallMode(W, H, scale, tips, newFrame);
+            // Draw alignment guide in the background (centered outline)
+            drawAlignmentGuide(W, H, lm);
 
-            // draw hands on top
-            drawHands(W, H, hands);
+            const t = game.target;
+            let targetPos = null;
+            let reachPctNow = 0;
 
-            // pick-mode command banner
-            if (config.mode === "pick") drawPickCommand(W, H);
+            if (lm && lm.length > 24) {
+                statusEl.classList.add("hidden");
 
-            updateHud();
+                targetPos = resolveTargetPos(lm, W, H);
+                if (targetPos) {
+                    const tr = TARGET_R_FRAC * scale;
+                    drawTarget(targetPos.x, targetPos.y, tr, t.holdProgress, now);
+                }
+
+                const arm = IDX[t.arm];
+                const sh = lm[arm.sh], wr = lm[arm.wr], hip = lm[arm.hip];
+                const bodyScale = dist(sh.x, sh.y, hip.x, hip.y) || 0.25;
+
+                const reach = dist(sh.x, sh.y, wr.x, wr.y) / bodyScale;
+                const required = RANGE[config.range];
+                reachPctNow = Math.min(100, Math.round(reach / required * 100));
+                game.currentReachPct = reachPctNow;
+                game.maxReachPct = Math.max(game.maxReachPct, reachPctNow);
+                game.totalReachPct += reachPctNow;
+                game.reachSamples++;
+
+                const shCx = (lm[IDX.L.sh].x + lm[IDX.R.sh].x) / 2;
+                const hipCx = (lm[IDX.L.hip].x + lm[IDX.R.hip].x) / 2;
+                const shCy = (lm[IDX.L.sh].y + lm[IDX.R.sh].y) / 2;
+                const hipCy = (lm[IDX.L.hip].y + lm[IDX.R.hip].y) / 2;
+                const torsoH = Math.abs(shCy - hipCy) || 0.25;
+                const leanRatio = Math.abs(shCx - hipCx) / torsoH;
+                if (config.posture === "stand" && leanRatio > 0.35) {
+                    game.leanFrames++;
+                    if (game.leanFrames === 7) game.leanWarnCount++;
+                } else {
+                    game.leanFrames = Math.max(0, game.leanFrames - 2);
+                }
+                safetyBanner.classList.toggle("show", game.leanFrames > 6);
+
+                if (targetPos) {
+                    const wrPx_x = wr.x * W, wrPx_y = wr.y * H;
+                    const tr = TARGET_R_FRAC * scale;
+                    const onTarget = dist(wrPx_x, wrPx_y, targetPos.x, targetPos.y) < tr + 22 * devicePixelRatio;
+
+                    if (onTarget && game.leanFrames <= 6) {
+                        game.holdAccum += dt;
+                        t.holdProgress = Math.min(1, game.holdAccum / config.hold);
+                        if (game.holdAccum >= config.hold) {
+                            game.done++;
+                            game.armHistory[t.arm]++;
+                            if (navigator.vibrate) navigator.vibrate([30, 40, 30]);
+                            flashSuccess(targetPos.x, targetPos.y, tr);
+                            newTarget();
+                        }
+                    } else {
+                        game.holdAccum = Math.max(0, game.holdAccum - dt * 0.6);
+                        t.holdProgress = game.holdAccum / config.hold;
+                    }
+                }
+
+                drawPose(W, H, lm, t.arm);
+            } else {
+                statusEl.classList.remove("hidden");
+                statusEl.textContent = "ถอยให้เห็นตัวครึ่งบนในกล้อง";
+            }
+
+            drawFlashes(now);
+            drawReachBar(reachPctNow);
+
+            $("hudDone").textContent = game.done;
+            $("hudReach").innerHTML = game.maxReachPct + '<small>%</small>';
             requestAnimationFrame(loop);
         }
 
-        function whichPlayer(px, W) {
-            // for 2P: left half = player 1, right half = player 2
-            // NOTE: canvas is mirrored via CSS, but coordinates are in unmirrored video space.
-            // The visual left (player 1) corresponds to x > 0.5 in raw coords because of mirror.
-            // We map by raw x: raw x<0.5 shows on right visually. To keep "visual left = P1",
-            // player 1 = raw x > 0.5.
-            return px > W / 2 ? 0 : 1;
-        }
-
-        function updateBallMode(W, H, scale, tips, newFrame) {
-            for (const t of game.targets) {
-                const tx = t.x * W, ty = t.y * H, tr = t.r * scale;
-                const age = performance.now() - t.born;
-
-                // expire เมื่อมีลิมิตเวลา (life > 0) และยังไม่ถูกแตะ
-                if (!t.hit && t.life > 0 && age > t.life) {
-                    // นับ "พลาด (miss)" ให้ผู้เล่นเจ้าของลูก (เดี่ยว=ผู้เล่น 0, สองคนแยกตาม side)
-                    // เฉพาะลูกที่ "ควรแตะ" (good) — ลูกแดง (bad) ที่หมดเวลาคือการหลบถูกต้อง ไม่นับพลาด
-                    if (t.scoring !== "bad") {
-                        const owner = t.side === "R" ? 1 : 0;
-                        game.p[owner].miss += 1;
-                    }
-                    respawn(t);
-                    continue;
-                }
-
-                if (t.hit) {
-                    t.pop += 0.08;
-                    const pr = tr * (1 + t.pop * 1.8);
-                    ctx.globalAlpha = Math.max(0, 1 - t.pop);
-                    ctx.beginPath(); ctx.arc(tx, ty, pr, 0, Math.PI * 2);
-                    ctx.strokeStyle = t.scoring === "bad" ? PALETTE.red : PALETTE.green;
-                    ctx.lineWidth = 6 * devicePixelRatio; ctx.stroke();
-                    ctx.globalAlpha = 1;
-                    if (t.pop >= 1) respawn(t);
-                    continue;
-                }
-
-                // draw ball
-                drawBall(tx, ty, tr, t.color, age);
-                // วงแหวนนับถอยหลัง (เฉพาะเมื่อมีลิมิตเวลา — "ไม่จำกัด" ไม่ต้องวาด)
-                if (t.life > 0) drawCountdownRing(tx, ty, tr, Math.max(0, 1 - age / t.life), t.color);
-                if (t.twoHand) drawTwoHandBadge(tx, ty, tr);
-
-                // ----- collision / arming (เฉพาะเฟรมที่มีข้อมูลมือสด) -----
-                if (!newFrame) continue;
-                const touching = tips.filter(tp => Math.hypot(tp.x - tx, tp.y - ty) < tr + 12 * devicePixelRatio);
-                // arm: ต้องรอให้บริเวณลูกปลอดนิ้ว + พ้นช่วงปลอดการชนหลัง spawn ก่อน จึงเริ่มนับการแตะได้
-                // กันคะแนนเฟ้อจากนิ้วที่ยังค้างอยู่ที่เดิมตอนลูกใหม่ถูกสุ่มมา
-                if (!t.armed) {
-                    if (age > SPAWN_SAFE_MS && touching.length === 0) t.armed = true;
-                    continue;
-                }
-                if (touching.length > 0) {
-                    if (t.twoHand) {
-                        // need 2 distinct hands touching
-                        const handsTouching = new Set(touching.map(tp => tp.lm));
-                        if (handsTouching.size >= 2) registerHit(t);
-                    } else {
-                        registerHit(t);
-                    }
-                }
-            }
-        }
-
-        function registerHit(t) {
-            t.hit = true;
-            const owner = t.side === "L" ? 0 : t.side === "R" ? 1 : 0;
-            if (t.scoring === "bad") {
-                game.p[owner].score = Math.max(0, game.p[owner].score - 10);
-                game.p[owner].miss += 1;
-            } else {
-                game.p[owner].score += 10;
-                game.p[owner].reach += 1;
-            }
-            if (navigator.vibrate) navigator.vibrate(t.scoring === "bad" ? [30, 30, 30] : 40);
-        }
-
-        function respawn(t) {
-            const fresh = makeTarget(t.side);
-            Object.assign(t, fresh);
-        }
-
-        function updatePickMode(W, H, scale, tips, newFrame) {
-            for (const set of game.pickSets) {
-                if (set.resolved) { Object.assign(set, makePickSet(set.side)); continue; }
-                const age = performance.now() - set.born;
-                const owner = set.side === "R" ? 1 : 0;
-
-                // expire ทั้งชุดเมื่อมีลิมิตเวลาและยังไม่แตะ → นับพลาดให้เจ้าของ แล้วสุ่มชุดใหม่
-                if (set.life > 0 && age > set.life) {
-                    game.p[owner].miss += 1;
-                    Object.assign(set, makePickSet(set.side));
-                    continue;
-                }
-
-                // วาดลูกทุกใบ + วงแหวนเวลา และเก็บว่ามีนิ้วจ่อใบไหนอยู่บ้าง
-                let hitBall = null, anyTouch = false;
-                for (const b of set.balls) {
-                    const bx = b.x * W, by = b.y * H, br = b.r * scale;
-                    drawBall(bx, by, br, b.color, performance.now());
-                    if (set.life > 0) drawCountdownRing(bx, by, br, Math.max(0, 1 - age / set.life), b.color);
-                    if (newFrame && tips.some(tp => Math.hypot(tp.x - bx, tp.y - by) < br + 12 * devicePixelRatio)) {
-                        anyTouch = true; if (!hitBall) hitBall = b;
-                    }
-                }
-
-                // ประมวลผลการชนเฉพาะเฟรมที่มีข้อมูลมือสด
-                if (!newFrame) continue;
-                // arm: รอให้บริเวณชุดปลอดนิ้ว + พ้นช่วงปลอดการชน ก่อนเริ่มนับ
-                // กันโดนนับทันทีเมื่อชุดใหม่โผล่ตรงตำแหน่งที่นิ้วยังค้างอยู่
-                if (!set.armed) {
-                    if (age > SPAWN_SAFE_MS && !anyTouch) set.armed = true;
-                    continue;
-                }
-                if (hitBall) {
-                    if (hitBall.color === set.command) { game.p[owner].score += 10; game.p[owner].reach += 1; if (navigator.vibrate) navigator.vibrate(40); }
-                    else { game.p[owner].score = Math.max(0, game.p[owner].score - 10); game.p[owner].miss += 1; if (navigator.vibrate) navigator.vibrate([30, 30, 30]); }
-                    set.resolved = true;
-                }
-            }
-        }
-
-        const COLOR_TH = { green: "เขียว", red: "แดง", blue: "น้ำเงิน", amber: "เหลือง" };
-        function drawPickCommand(W, H) {
+        // ---------- drawing ----------
+        let flashes = [];
+        function flashSuccess(x, y, r) { flashes.push({ x, y, r, t: performance.now() }); }
+        function drawFlashes(now) {
             ctx.save();
-            ctx.setTransform(1, 0, 0, 1, 0, 0); // unmirror for upright text
-            for (const set of game.pickSets) {
-                // raw side L (x<0.5 raw) shows on the RIGHT visually due to mirror, and vice versa.
-                // Place banner above that player's region in VISUAL space.
-                let visCx;
-                if (set.side === null) visCx = W * 0.5;
-                else if (set.side === "L") visCx = W * 0.75; // raw-left shows visual-right
-                else visCx = W * 0.25;
-
-                const y = H * 0.12;
-                const txt = "แตะสี " + (COLOR_TH[set.command] || set.command);
-                ctx.font = `bold ${Math.round(W * 0.028)}px ui-rounded, "Noto Sans Thai", sans-serif`;
-                ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                const padX = W * 0.018, w = ctx.measureText(txt).width + padX * 2, h = W * 0.045;
-                // pill bg
-                ctx.fillStyle = "rgba(15,27,45,0.75)";
-                roundRect(ctx, visCx - w / 2, y - h / 2, w, h, h / 2); ctx.fill();
-                // swatch
-                ctx.beginPath();
-                ctx.arc(visCx - w / 2 + h * 0.55, y, h * 0.28, 0, Math.PI * 2);
-                ctx.fillStyle = PALETTE[set.command]; ctx.fill();
-                // text
-                ctx.fillStyle = "#f5f1e8";
-                ctx.fillText(txt, visCx + h * 0.3, y);
-            }
-            ctx.restore();
-        }
-        function roundRect(c, x, y, w, h, r) {
-            c.beginPath(); c.moveTo(x + r, y);
-            c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
-            c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
-        }
-
-        // ---------- drawing helpers ----------
-        function drawBall(x, y, r, colorKey, age) {
-            const breathe = 1 + Math.sin(age / 1000 * 3) * 0.06;
-            const base = PALETTE[colorKey] || PALETTE.green;
-            // outer ring
-            ctx.beginPath(); ctx.arc(x, y, r * breathe * 1.35, 0, Math.PI * 2);
-            ctx.strokeStyle = hexA(base, 0.4); ctx.lineWidth = 3 * devicePixelRatio; ctx.stroke();
-            // core gradient
-            const g = ctx.createRadialGradient(x, y - r * 0.3, r * 0.2, x, y, r);
-            g.addColorStop(0, lighten(base)); g.addColorStop(1, base);
-            ctx.beginPath(); ctx.arc(x, y, r * breathe, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
-        }
-        // วงแหวนนับถอยหลังรอบลูก: เริ่มเต็มวง (frac=1) แล้วค่อย ๆ ลดมุมลงจนหมด (frac=0)
-        function drawCountdownRing(x, y, r, frac, colorKey) {
-            const rr = r * 1.55; // อยู่นอกวง outer ring ของลูก
-            ctx.lineWidth = 4 * devicePixelRatio;
-            // track จาง ๆ กลมกลืนกับธีม paper
-            ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2);
-            ctx.strokeStyle = "rgba(245,241,232,0.12)"; ctx.stroke();
-            // ส่วนเวลาที่เหลือ เริ่มจากด้านบน (-90°) กวาดตามเข็มลดลงเรื่อย ๆ
-            const start = -Math.PI / 2, end = start + Math.PI * 2 * frac;
-            ctx.beginPath(); ctx.arc(x, y, rr, start, end);
-            // เหลือเวลาน้อย (<30%) เปลี่ยนเป็นสีเหลืองอำพันเตือน
-            ctx.strokeStyle = frac < 0.3 ? PALETTE.amber : (PALETTE[colorKey] || PALETTE.green);
-            ctx.lineCap = "round"; ctx.stroke(); ctx.lineCap = "butt";
-        }
-        function drawTwoHandBadge(x, y, r) {
-            ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-            const sx = canvas.width - x; // mirror x for upright text
-            ctx.font = `${Math.round(r * 0.6)}px ui-rounded, sans-serif`;
-            ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.fillStyle = "rgba(245,241,232,0.95)";
-            ctx.fillText("✋✋", sx, y);
-            ctx.restore();
-        }
-        function drawHands(W, H, hands) {
-            for (const lm of hands) {
-                ctx.strokeStyle = "rgba(245,241,232,0.35)"; ctx.lineWidth = 2 * devicePixelRatio;
-                for (const [a, b] of BONES) { ctx.beginPath(); ctx.moveTo(lm[a].x * W, lm[a].y * H); ctx.lineTo(lm[b].x * W, lm[b].y * H); ctx.stroke(); }
-                for (const i of TIPS) {
-                    ctx.beginPath(); ctx.arc(lm[i].x * W, lm[i].y * H, 8 * devicePixelRatio, 0, Math.PI * 2);
-                    ctx.fillStyle = i === 8 ? "#f5f1e8" : "rgba(245,241,232,0.7)"; ctx.fill();
+            flashes = flashes.filter(f => now - f.t < 600);
+            for (const f of flashes) {
+                const p = (now - f.t) / 600;
+                ctx.globalAlpha = 1 - p;
+                ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (1 + p * 2), 0, Math.PI * 2);
+                ctx.strokeStyle = "#5cc99a"; ctx.lineWidth = 8 * devicePixelRatio; ctx.stroke();
+                for (let i = 0; i < 6; i++) {
+                    const a = (i / 6) * Math.PI * 2;
+                    const startR = f.r * (1 + p * 1.5), endR = f.r * (1.5 + p * 2.5);
+                    ctx.beginPath();
+                    ctx.moveTo(f.x + Math.cos(a) * startR, f.y + Math.sin(a) * startR);
+                    ctx.lineTo(f.x + Math.cos(a) * endR, f.y + Math.sin(a) * endR);
+                    ctx.strokeStyle = "#5cc99a"; ctx.lineWidth = 4 * devicePixelRatio; ctx.stroke();
                 }
             }
+            ctx.globalAlpha = 1; ctx.restore();
         }
-        function hexA(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
-        function lighten(hex) { const n = parseInt(hex.slice(1), 16); const r = Math.min(255, (n >> 16 & 255) + 60), g = Math.min(255, (n >> 8 & 255) + 60), b = Math.min(255, (n & 255) + 60); return `rgb(${r},${g},${b})`; }
 
-        // ---------- end / summary ----------
+        function drawTarget(x, y, r, progress, now) {
+            const breathe = 1 + Math.sin(game.rhythmPhase * 0.9) * 0.06;
+
+            const haloG = ctx.createRadialGradient(x, y, r * 0.8, x, y, r * 2.5 * breathe);
+            haloG.addColorStop(0, "rgba(90,169,230,0.15)");
+            haloG.addColorStop(1, "rgba(90,169,230,0)");
+            ctx.beginPath(); ctx.arc(x, y, r * 2.5 * breathe, 0, Math.PI * 2);
+            ctx.fillStyle = haloG; ctx.fill();
+
+            ctx.beginPath(); ctx.arc(x, y, r * 1.5 * breathe, 0, Math.PI * 2);
+            ctx.strokeStyle = "rgba(159,208,245,0.35)"; ctx.lineWidth = 3 * devicePixelRatio; ctx.stroke();
+
+            if (progress > 0) {
+                ctx.beginPath(); ctx.arc(x, y, r * 1.5, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+                ctx.strokeStyle = "#5cc99a"; ctx.lineWidth = 9 * devicePixelRatio; ctx.lineCap = "round"; ctx.stroke();
+            }
+
+            const g = ctx.createRadialGradient(x, y - r * 0.3, r * 0.2, x, y, r);
+            g.addColorStop(0, "#bfe2fb"); g.addColorStop(1, "#4a90d0");
+            ctx.beginPath(); ctx.arc(x, y, r * breathe, 0, Math.PI * 2);
+            ctx.fillStyle = g; ctx.fill();
+
+            drawUnmirroredText("🖐", x, y, `${Math.round(r * 1.0)}px sans-serif`, "#fff");
+            drawUnmirroredText(game.target.arm === "R" ? "ขวา" : "ซ้าย", x, y + r * 1.2, `${Math.round(r * 0.45)}px ui-rounded, sans-serif`, "rgba(238,242,247,0.7)", "center", "top");
+        }
+
+        function drawPose(W, H, lm, activeArm) {
+            ctx.save();
+
+            // Only render torso bones and the active arm's bones
+            const activeBones = [
+                [11, 12], [11, 23], [12, 24], [23, 24], // Torso
+                ...(activeArm === "R" ? [[12, 14], [14, 16]] : [[11, 13], [13, 15]]) // Active arm
+            ];
+
+            ctx.strokeStyle = "rgba(238,242,247,0.25)"; ctx.lineWidth = 3 * devicePixelRatio;
+            for (const [a, b] of activeBones) {
+                if (!lm[a] || !lm[b]) continue;
+                ctx.beginPath(); ctx.moveTo(lm[a].x * W, lm[a].y * H); ctx.lineTo(lm[b].x * W, lm[b].y * H); ctx.stroke();
+            }
+
+            // Only render active joints
+            const joints = activeArm === "R" 
+                ? [11, 12, 14, 16, 23, 24] 
+                : [11, 12, 13, 15, 23, 24];
+
+            for (const j of joints) {
+                if (!lm[j]) continue;
+                ctx.beginPath(); ctx.arc(lm[j].x * W, lm[j].y * H, 6 * devicePixelRatio, 0, Math.PI * 2);
+                ctx.fillStyle = "rgba(238,242,247,0.4)"; ctx.fill();
+            }
+
+            const arm = IDX[activeArm];
+            const chain = [arm.sh, arm.el, arm.wr];
+            ctx.strokeStyle = "rgba(242,193,78,0.6)"; ctx.lineWidth = 5 * devicePixelRatio;
+            for (let i = 0; i < chain.length - 1; i++) {
+                const a = lm[chain[i]], b = lm[chain[i + 1]];
+                if (!a || !b) continue;
+                ctx.beginPath(); ctx.moveTo(a.x * W, a.y * H); ctx.lineTo(b.x * W, b.y * H); ctx.stroke();
+            }
+
+            const wr = lm[arm.wr];
+            if (wr) {
+                ctx.beginPath(); ctx.arc(wr.x * W, wr.y * H, 18 * devicePixelRatio, 0, Math.PI * 2);
+                ctx.fillStyle = "#f2c14e"; ctx.fill();
+                ctx.strokeStyle = "rgba(255,255,255,0.8)"; ctx.lineWidth = 3 * devicePixelRatio; ctx.stroke();
+            }
+
+            const sh = lm[arm.sh];
+            if (sh && wr) {
+                ctx.setLineDash([8, 8]);
+                ctx.strokeStyle = "rgba(242,193,78,0.3)"; ctx.lineWidth = 2 * devicePixelRatio;
+                ctx.beginPath(); ctx.moveTo(sh.x * W, sh.y * H); ctx.lineTo(wr.x * W, wr.y * H); ctx.stroke();
+                ctx.setLineDash([]);
+
+                const color = game.currentReachPct >= 90 ? "#5cc99a" : "rgba(238,242,247,0.7)";
+                drawUnmirroredText(`${game.currentReachPct}%`, wr.x * W, wr.y * H - 24 * devicePixelRatio, `bold ${Math.round(16 * devicePixelRatio)}px ui-rounded, sans-serif`, color, "center", "bottom");
+            }
+
+            ctx.restore();
+        }
+
+        function drawReachBar(pct) {
+            const bw = reachCanvas.width, bh = reachCanvas.height;
+            rctx.clearRect(0, 0, bw, bh);
+            const barH = bh - 30;
+            const barX = 10, barW = bw - 20;
+
+            rctx.fillStyle = "rgba(27,46,77,0.7)";
+            rctx.beginPath(); rctx.roundRect(barX, 15, barW, barH, 6); rctx.fill();
+
+            const fillH = barH * Math.min(1, pct / 100);
+            const color = pct >= 90 ? "#5cc99a" : pct >= 60 ? "#f2c14e" : "#5aa9e6";
+            rctx.fillStyle = color;
+            rctx.beginPath(); rctx.roundRect(barX, 15 + barH - fillH, barW, fillH, 6); rctx.fill();
+
+            const threshY = 15 + barH * (1 - 1);
+            rctx.strokeStyle = "rgba(238,242,247,0.5)"; rctx.lineWidth = 1;
+            rctx.setLineDash([4, 3]);
+            rctx.beginPath(); rctx.moveTo(barX, threshY); rctx.lineTo(barX + barW, threshY); rctx.stroke();
+            rctx.setLineDash([]);
+
+            rctx.fillStyle = "rgba(238,242,247,0.6)";
+            rctx.font = "bold 10px sans-serif"; rctx.textAlign = "center";
+            rctx.fillText("เอื้อม", bw / 2, 12);
+        }
+
+        // ---------- end game ----------
         function endGame() {
             if (!game) return;
             game.running = false;
             hud.classList.add("hidden"); ctrlBtns.classList.add("hidden");
-            divider.classList.add("hidden"); pLabels.classList.add("hidden");
+            cueEl.classList.remove("show"); safetyBanner.classList.remove("show"); armLabel.classList.remove("show");
 
-            const dur = Math.round((Math.min(performance.now() - game.startTime, game.duration)) / 1000);
-            const sumStats = $("sumStats"), sumWinner = $("sumWinner"), sumSubtitle = $("sumSubtitle");
+            const dur = Math.round(Math.min(performance.now() - game.startTime, game.duration === Infinity ? Infinity : game.duration) / 1000);
+            const perMin = dur > 0 ? (game.done / dur * 60).toFixed(1) : "—";
+            const avgReach = game.reachSamples > 0 ? Math.round(game.totalReachPct / game.reachSamples) : 0;
 
-            if (game.players === 2) {
-                const a = game.p[0], b = game.p[1];
-                sumSubtitle.textContent = `เล่นไป ${fmtTime(dur)} นาที`;
-                sumWinner.classList.remove("hidden");
-                if (a.score > b.score) sumWinner.textContent = "🏆 ผู้เล่น 1 ชนะ!";
-                else if (b.score > a.score) sumWinner.textContent = "🏆 ผู้เล่น 2 ชนะ!";
-                else sumWinner.textContent = "เสมอกัน!";
-                sumStats.innerHTML = `
-      <div class="stat"><div class="num" style="color:var(--green-soft)">${a.score}</div><div class="cap">ผู้เล่น 1 · เอื้อม ${a.reach} ครั้ง</div></div>
-      <div class="stat"><div class="num" style="color:var(--pulse-soft)">${b.score}</div><div class="cap">ผู้เล่น 2 · เอื้อม ${b.reach} ครั้ง</div></div>`;
-            } else {
-                const a = game.p[0];
-                sumWinner.classList.add("hidden");
-                sumSubtitle.textContent = `เล่นไป ${fmtTime(dur)} นาที`;
-                const accuracy = (a.reach + a.miss) > 0 ? Math.round(a.reach / (a.reach + a.miss) * 100) : 100;
-                sumStats.innerHTML = `
-      <div class="stat"><div class="num">${a.score}</div><div class="cap">คะแนนรวม</div></div>
-      <div class="stat"><div class="num">${a.reach}</div><div class="cap">เอื้อมถึง (ครั้ง)</div></div>
-      <div class="stat"><div class="num">${(a.reach / Math.max(dur, 1) * 60).toFixed(0)}</div><div class="cap">ครั้ง/นาที</div></div>
-      <div class="stat"><div class="num">${accuracy}%</div><div class="cap">ความแม่นยำ</div></div>`;
-            }
+            $("sumSubtitle").textContent = `เล่นไป ${fmtTime(dur)} นาที`;
+            $("sumStats").innerHTML = `
+    <div class="stat"><div class="num hl">${game.done}</div><div class="cap">เป้าที่ทำได้</div></div>
+    <div class="stat"><div class="num">${game.maxReachPct}%</div><div class="cap">เอื้อมไกลสุด</div></div>
+    <div class="stat"><div class="num">${avgReach}%</div><div class="cap">เอื้อมเฉลี่ย</div></div>
+    <div class="stat"><div class="num">${perMin}</div><div class="cap">เป้า/นาที</div></div>
+    <div class="stat"><div class="num">${game.armHistory.L}</div><div class="cap">ซ้ายสำเร็จ</div></div>
+    <div class="stat"><div class="num">${game.armHistory.R}</div><div class="cap">ขวาสำเร็จ</div></div>
+    <div class="stat"><div class="num">${game.leanWarnCount}</div><div class="cap">เตือนเอนตัว</div></div>
+    <div class="stat"><div class="num">${fmtTime(dur)}</div><div class="cap">เวลารวม</div></div>`;
             summary.classList.remove("hidden");
         }
 
-        // ---------- controls ----------
-        $("btnStart").addEventListener("click", () => { $("btnStart").disabled = true; beginWithCountdown().finally(() => $("btnStart").disabled = false); });
+        $("btnStart").addEventListener("click", () => {
+            if (!config.safetyOk || !isReady) return;
+            $("btnStart").disabled = true;
+            beginWithCountdown().finally(() => { $("btnStart").disabled = !config.safetyOk || !isReady; });
+        });
         $("btnFinish").addEventListener("click", endGame);
         $("btnCancel").addEventListener("click", () => {
+            if (!game) return;
             game.running = false;
             hud.classList.add("hidden"); ctrlBtns.classList.add("hidden");
-            divider.classList.add("hidden"); pLabels.classList.add("hidden");
+            cueEl.classList.remove("show"); safetyBanner.classList.remove("show"); armLabel.classList.remove("show");
             menu.classList.remove("hidden");
         });
         $("btnAgain").addEventListener("click", () => { summary.classList.add("hidden"); beginWithCountdown(); });
         $("btnMenu").addEventListener("click", () => { summary.classList.add("hidden"); menu.classList.remove("hidden"); });
+
+        // Preload system components instantly on page load
+        async function initSystem() {
+            try {
+                statusEl.classList.remove("hidden");
+                statusEl.textContent = "กำลังโหลดระบบตรวจจับร่างกายและกล้อง…";
+                await Promise.all([ensureModel(), ensureCamera()]);
+                isReady = true;
+                statusEl.textContent = "ระบบพร้อมใช้งาน";
+                setTimeout(() => {
+                    if (isReady && (!game || !game.running)) {
+                        statusEl.classList.add("hidden");
+                    }
+                }, 2000);
+                if (config.safetyOk) {
+                    $("btnStart").disabled = false;
+                }
+            } catch (err) {
+                statusEl.classList.remove("hidden");
+                statusEl.textContent = "เกิดข้อผิดพลาดในการโหลดระบบ หรือไม่ได้อนุญาตให้ใช้กล้อง";
+                console.error(err);
+            }
+        }
+        initSystem();
     </script>
 </body>
 
